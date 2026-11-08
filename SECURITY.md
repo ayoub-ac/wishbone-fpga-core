@@ -2,7 +2,8 @@
 
 This document describes what the Wishbone B4 master + slave pair is
 designed to defend against, what it is NOT designed to defend against,
-and how to evaluate the claims.
+and how to evaluate the claims. None of the properties below has been
+independently verified; they describe design intent.
 
 The cores are a control-and-status interconnect, not a cryptographic
 primitive. The threat model is therefore very different from the AES /
@@ -19,17 +20,16 @@ or is mis-aligned with the data-bus width is answered with `ERR` (B4
 means software cannot probe beyond the published register map and get
 an `ACK` response.
 
-The decode predicate is bound by an SVA assertion
-(`p_resp_after_stb`, `p_resp_only_when_cyc`); a regression that breaks
-the pairing fails the gate.
+The decode predicate is intended to be checked by SVA assertions
+(`p_resp_after_stb`, `p_resp_only_when_cyc`); not verified.
 
 ### 2. Exclusive termination
 
 `ACK`, `ERR`, and `RTY` are mutually exclusive (`p_resp_mutex`). A
 transaction terminates with exactly one of the three, so software /
 firmware cannot observe an ambiguous state. A slave that asserts more
-than one termination signal at once is a B4 violation; the bound SVA
-catches the regression.
+than one termination signal at once is a B4 violation; the SVA is
+intended to catch this; not verified.
 
 ### 3. LOCK-qualified atomic transactions
 
@@ -37,13 +37,13 @@ catches the regression.
 the lock as an interlock against any internal user (e.g. a refresh
 arbiter); the shipped slave has no other internal user, so `LOCK` is
 exposed via `lock_active_o` for downstream arbiters to consume. An
-attacker cannot break atomicity by toggling `LOCK` without `CYC` — that
-combination is rejected at the protocol layer.
+attacker is intended to be unable to break atomicity by toggling `LOCK`
+without `CYC`; not verified.
 
 ### 4. Constant-time on the bus
 
-Every transaction takes the same number of cycles regardless of which
-register is accessed. There is no early-exit, no data-dependent
+Every transaction is intended to take the same number of cycles
+regardless of which register is accessed; not verified. There is no early-exit, no data-dependent
 latency, no per-register pipeline. Software cannot use timing to infer
 the contents of a register it could not otherwise read.
 
@@ -56,7 +56,8 @@ clears its in-flight beat tracker.
 
 ## What is NOT covered (be honest)
 
-This list is exhaustive so purchasers can evaluate fit:
+This list is provided so integrators can evaluate fit; it may not be
+complete:
 
 * **Side-channel attacks via bus timing.** Although per-register access
   is constant-time, a sophisticated attacker who can observe `ACK` /
@@ -69,7 +70,7 @@ This list is exhaustive so purchasers can evaluate fit:
   storage is a flat array of flip-flops; a power attacker measuring
   leakage at the FF-update boundary can mount standard DPA against
   values written to RW registers. Mitigation requires masked storage
-  and is not in scope for the GPL tier.
+  and is not in scope.
 * **Fault injection on the FSM** (CYC glitch, ACK forge): a flipped
   flop can corrupt the response or skip a write. No duplicated-FSM /
   parity-protected variant is shipped.
@@ -87,31 +88,32 @@ This list is exhaustive so purchasers can evaluate fit:
 
 ## Compliance claims
 
-* **Wishbone B4** conformance: the master and slave implement the
-  protocol exactly as specified, including:
+* **Wishbone B4** conformance: the master and slave are intended to
+  implement the protocol as specified; not verified. Intended points:
   - Independent CYC/STB handshakes (§3.1.3).
   - STALL-driven backpressure in pipelined mode (§3.2).
   - Mutually exclusive ACK/ERR/RTY termination (§3.1.4).
   - LOCK qualification by CYC (§3.2.4).
   - Aligned-address requirement.
-  The shipped Verilator regression includes 8 SVA properties that
-  bind these invariants on every cycle of every test, and a 1024-
-  vector random regression cross-validated against a software shadow
-  of the register file.
+  The Verilator testbench includes SVA properties for these
+  invariants and a 1024-vector random test checked against a software
+  shadow of the register file; results not independently confirmed.
+  The slave does not decode `CTI` / `BTE`, and the master emits only
+  linear bursts.
 * **Wishbone B5** (newer revision): the cores implement B4 as
   specified; B5 adds clarifications but no breaking changes for the
-  features used here. Cores work as B5-conformant slaves in our
-  reading, but we do not formally claim B5 compliance.
+  features used here. B5 compliance is not claimed or verified.
 
-## Test methodology used to validate the security claims
+## Test methodology intended to check the security claims
 
-The Verilator testbench runs:
+Tests are included; results not independently confirmed. The Verilator
+testbench is intended to run:
 
 1. **Functional correctness on the published register map**: `make test`.
    Tests single + burst W/R, RTY, ERR, LOCK, mid-burst reset,
    back-to-back transactions, and 1024 random transactions
    cross-checked against a Python software shadow of the regfile.
-2. **SVA-enforced protocol invariants on every cycle**: see
+2. **SVA protocol invariants**: see
    `tb/wb_assertions.sv`. Properties include:
    - STB asserted implies CYC asserted.
    - ACK/ERR/RTY only meaningful while CYC=1.
@@ -146,5 +148,6 @@ structure of the slave.
 ## Reporting issues
 
 Found a bug, a side channel we missed, or a discrepancy with the B4
-specification? Open an issue or contact the email in the README.
-Coordinated disclosure welcome. We do not currently offer a bug bounty.
+specification? Open a GitHub issue (do not include confidential
+details). No support or maintenance is provided. We do not offer a bug
+bounty.

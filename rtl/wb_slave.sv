@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Wishbone B4 slave (Specification B4, OpenCores / Silicore).
 //

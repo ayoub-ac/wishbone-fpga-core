@@ -1,24 +1,25 @@
 # wishbone-fpga-core
 
-[![License: GPL-3.0-or-later or commercial](https://img.shields.io/badge/license-GPL--3.0%20%7C%20commercial-blue.svg)](LICENSE.md)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](#verification)
-[![Wishbone B4](https://img.shields.io/badge/Wishbone%20B4-conformant-blue.svg)](#verification)
-[![Lint](https://img.shields.io/badge/Verilator%20lint-clean-brightgreen.svg)](#build--test)
+[![License: GPL-3.0 | commercial](https://img.shields.io/badge/license-GPL--3.0%20%7C%20commercial-blue.svg)](LICENSE.md)
+
+> **Status: experimental and unverified.** This core was written with AI assistance and has not been independently verified in simulation regressions, formal proofs or hardware. Claims in this repository about protocol compliance, test results, timing and resource use are unverified. Do not use it in production or safety-critical designs without your own verification. No support or maintenance is provided.
 
 Parameterizable Wishbone B4 master and slave IP cores in SystemVerilog,
 the open-hardware alternative to AXI for OpenROAD / Caravel, LiteX,
 Pulpissimo, and the OpenCores ecosystem.
 
-The cores implement the full Wishbone B4 specification (OpenCores /
-Silicore B4): classic-standard cycles, B4 pipelined cycles with STALL
-back-pressure, incrementing bursts via `CTI` / `BTE`, mutually-exclusive
-`ACK / ERR / RTY` termination, and `LOCK`-qualified atomic transactions.
+The cores are intended to implement the Wishbone B4 specification
+(OpenCores / Silicore B4); compliance is not verified. Intended features:
+classic-standard cycles, B4 pipelined cycles with STALL back-pressure,
+incrementing bursts (the master drives `CTI` / `BTE`; the slave does not
+decode them), mutually-exclusive `ACK / ERR / RTY` termination, and
+`LOCK`-qualified transactions.
 Targets iCE40, ECP5, Xilinx 7-series, Cyclone V, and Tang Nano 9K.
 
-The pair is verified end-to-end against 1024 cross-validated random
-transactions, all the canonical edge cases (burst, lock, retry, error,
-mid-burst reset, address decode), and 8 SystemVerilog assertions
-binding the protocol invariants on every cycle.
+Tests are included (1024 random transactions checked against a
+software model, edge cases such as burst, lock, retry, error, mid-burst
+reset and address decode, and SystemVerilog assertions on protocol
+invariants); results not independently confirmed.
 
 ## Quickstart
 
@@ -59,8 +60,8 @@ timing diagrams and the per-channel protocol.
 
 ## Headline numbers
 
-Real numbers from `make synth_report` (Yosys 0.x, `wb_top` with
-`NUM_REGS=16`, `DATA_WIDTH=32`):
+Unverified estimates (see `RESOURCE_ESTIMATES.md`); run `make synth_report`
+for real numbers (`wb_top` with `NUM_REGS=16`, `DATA_WIDTH=32`):
 
 | Target           | Notes                  |
 |------------------|------------------------|
@@ -68,8 +69,8 @@ Real numbers from `make synth_report` (Yosys 0.x, `wb_top` with
 | ECP5 LFE5UM-25   | see `SYNTH_REPORT.md`  |
 | Xilinx Artix-7   | see `SYNTH_REPORT.md`  |
 
-Vendor flows (Vivado / Diamond / Quartus) typically pack 30-40% smaller
-than the Yosys numbers shown.
+Vendor flows (Vivado / Diamond / Quartus) may pack smaller than the
+Yosys numbers; not measured.
 
 ## Build & test
 
@@ -80,17 +81,19 @@ make lint            # static check the RTL (master + slave + top + tb)
 make test            # build and run regression (1024 random + edge cases)
 ```
 
-A passing run ends with `+PASS all tests passed` and exits 0.
+The testbench is intended to end with `+PASS all tests passed` and exit 0
+on success; results not independently confirmed.
 
 ## Verification
 
-Three orthogonal techniques are wired into the testbench: 9 directed
+Tests are included; results not independently confirmed. Three
+techniques are intended in the testbench: 9 directed
 tests (single + burst W/R, ERR / RTY / LOCK, mid-burst reset,
-back-to-back), 8 SVA properties (`tb/wb_assertions.sv` — STB->CYC,
+back-to-back), SVA properties (`tb/wb_assertions.sv` — STB->CYC,
 response mutex, CYC stability, LOCK qualification, no-stall-when-idle,
 deadlock bound), and 10 functional coverage bins (`tb/wb_cov.sv`). The
-1024 random transactions are cross-validated against a Python software
-shadow of the slave regfile.
+1024 random transactions are intended to be checked against a Python
+software shadow of the slave regfile.
 
 The `classic_mode` coverage bin only fires when the design is
 elaborated with `PIPELINED = 0`; in the shipped pipelined build it is

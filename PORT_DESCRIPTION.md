@@ -1,7 +1,8 @@
 # Port description
 
 Detailed handshake protocol and timing for the Wishbone B4 master + slave
-pair (`wb_top`, `wb_master`, `wb_slave`).
+pair (`wb_top`, `wb_master`, `wb_slave`). The timing and protocol
+behaviour below is intended; Wishbone B4 compliance is not verified.
 
 ## Reset
 
@@ -126,6 +127,8 @@ B4 atomicity is across one CYC window only.
 | `rd_event_addr_o`    | out | Address of the registered read event                                       |
 
 ## Latency summary
+
+Intended latencies from the RTL design; not verified in simulation or hardware.
 
 | Phase                                    | Cycles                |
 |------------------------------------------|-----------------------|

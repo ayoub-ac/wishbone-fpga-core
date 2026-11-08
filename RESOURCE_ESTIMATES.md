@@ -1,7 +1,9 @@
 # Resource estimates
 
-Numbers below are from Yosys 0.x generic synthesis (`make synth_report`).
-They are pre-place-and-route. See `SYNTH_REPORT.md` for the most recent
+> **Unverified estimates.** The figures in this file have not been confirmed by a recorded, reproducible synthesis run or by hardware measurement. Treat every LUT, FF, BRAM, DSP, Fmax, throughput, latency and power figure here as an unverified estimate. Run `make synth_report` with your own toolchain to get real numbers.
+
+Numbers below are unverified estimates intended to reflect Yosys generic
+synthesis (`make synth_report`), pre-place-and-route. See `SYNTH_REPORT.md` for the most recent
 run; this document explains what dominates the area and how to shrink
 it.
 
@@ -40,8 +42,8 @@ pair):
 * **Master burst pipeline**: address auto-increment is a single adder
   in `BYTES` increments. ~5 LUTs.
 
-Total: roughly 800-1500 LUT and 700-1500 FF on iCE40 / ECP5 / Artix-7
-generic synth. With vendor-flow LUTRAM packing the LUT count drops.
+Total (unverified estimate): roughly 800-1500 LUT and 700-1500 FF on
+iCE40 / ECP5 / Artix-7 generic synth. With vendor-flow LUTRAM packing the LUT count drops.
 
 ## What you can do to shrink it
 
@@ -52,16 +54,16 @@ generic synth. With vendor-flow LUTRAM packing the LUT count drops.
   `MAX_BURST = 1` collapses the master's burst counter into a single
   flip-flop and the synthesizer prunes the auto-increment adder.
 * **Use classic mode** (`PIPELINED = 0`) to drop the STALL plumbing
-  on both sides. Classic shaves ~10% LUT off the slave.
+  on both sides. The LUT saving has not been measured.
 * **Reduce DATA_WIDTH**. A 16-bit pair takes half the storage and
   half the read-mux width. Most RV32 SoC peripherals use 32-bit;
   embedded controllers sometimes use 16.
 
 ## What you can do to push throughput
 
-The pair's max bandwidth is one transaction per cycle on each
-direction. At 100 MHz with 32-bit data that is 400 MB/s read and
-400 MB/s write — far more than typical control-bus traffic.
+The pair is intended to sustain up to one transaction per cycle in
+each direction (unverified estimate). At 100 MHz with 32-bit data that
+would be 400 MB/s read and 400 MB/s write; not measured.
 
 For high-bandwidth data movement do NOT use the regfile slave shipped
 here. Wrap the master alone with a streaming source that feeds
@@ -69,6 +71,8 @@ here. Wrap the master alone with a streaming source that feeds
 storage with a BRAM-mapped buffer.
 
 ## Frequency
+
+All figures below are unverified estimates; no timing run backs them.
 
 * iCE40 UP5K, default toolchain (Yosys + nextpnr), no constraints:
   ~70-90 MHz typical (limited by the regfile read mux depth and the
@@ -80,7 +84,7 @@ storage with a BRAM-mapped buffer.
 
 ## Power
 
-Ballpark: 3-6 mW dynamic on iCE40 UP5K at 50 MHz with continuous
+Unverified estimate: 3-6 mW dynamic on iCE40 UP5K at 50 MHz with continuous
 traffic. The regfile only toggles during a write; reads are
 combinational. Static power is dominated by the FPGA itself.
 
